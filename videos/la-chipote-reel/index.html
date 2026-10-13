@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, height=1920">
+    <title>La Chipote — Bandol</title>
+    <script src="vendor/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #264653;
+        font-family: "Archivo Black", sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- shared scene scaffold ---------- */
+      .scene {
+        background: var(--bg);
+        color: var(--ink);
+        overflow: hidden;
+      }
+      .scene-glow {
+        position: absolute;
+        width: 1100px;
+        height: 1100px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 68%);
+        opacity: 0.22;
+        will-change: transform;
+      }
+      .scene-ghost {
+        position: absolute;
+        left: 72px;
+        top: 740px;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 190px;
+        color: var(--ink);
+        opacity: 0.06;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        will-change: transform;
+      }
+      .scene-rule {
+        position: absolute;
+        height: 4px;
+        background: var(--accent);
+        transform-origin: 0% 50%;
+      }
+      .scene-tag {
+        position: absolute;
+        left: 80px;
+        top: 150px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: 0.1em;
+        color: var(--accent-text, var(--accent));
+        opacity: 0;
+      }
+      .scene-headline {
+        position: absolute;
+        left: 80px;
+        right: 80px;
+        top: 230px;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 72px;
+        line-height: 1.08;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .scene-headline .w {
+        display: inline-block;
+        opacity: 0;
+      }
+      .scene-icon {
+        position: absolute;
+        left: 80px;
+        bottom: 300px;
+      }
+      .scene-icon svg path,
+      .scene-icon svg circle,
+      .scene-icon svg ellipse {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* ---------- journey bar (persistent) ---------- */
+      #journey {
+        z-index: 50;
+      }
+      .journey-track {
+        position: absolute;
+        left: 80px;
+        right: 80px;
+        bottom: 150px;
+        height: 2px;
+        background: rgba(38, 70, 83, 0.18);
+      }
+      .journey-track.light {
+        background: rgba(247, 237, 226, 0.22);
+      }
+      .journey-tick {
+        position: absolute;
+        bottom: 144px;
+        width: 2px;
+        height: 14px;
+        background: rgba(38, 70, 83, 0.3);
+      }
+      .journey-label {
+        position: absolute;
+        bottom: 170px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        color: #264653;
+        transform: translateX(-50%);
+      }
+      .journey-sun {
+        position: absolute;
+        left: 80px;
+        bottom: 139px;
+        width: 24px;
+        height: 24px;
+        margin-left: -12px;
+        border-radius: 50%;
+        background: #e9c46a;
+        box-shadow: 0 0 0 6px rgba(233, 196, 106, 0.25);
+        will-change: transform;
+      }
+
+      /* ---------- hook (scene 1) ---------- */
+      .hook-mark {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .hook-mark .word {
+        display: inline-block;
+        font-size: 112px;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+        opacity: 0;
+      }
+      .hook-place {
+        display: block;
+        margin-top: 18px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 32px;
+        letter-spacing: 0.18em;
+        color: var(--accent-text, var(--accent));
+        opacity: 0;
+      }
+      .hook-tagline {
+        display: block;
+        margin-top: 26px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 400;
+        font-size: 26px;
+        color: var(--ink);
+        opacity: 0.75;
+        opacity: 0;
+      }
+      .hook-ring {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: 640px;
+        height: 640px;
+        transform: translate(-50%, -50%);
+      }
+      .hook-ring circle {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 3;
+        opacity: 0.5;
+      }
+
+      /* ---------- outro (scene 8) ---------- */
+      .outro-wrap {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        text-align: center;
+      }
+      .outro-mark {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 96px;
+        color: var(--ink);
+        opacity: 0;
+      }
+      .outro-place {
+        margin-top: 14px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 28px;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        opacity: 0;
+      }
+      .outro-rule {
+        width: 120px;
+        height: 3px;
+        background: var(--accent);
+        margin: 36px auto;
+        transform: scaleX(0);
+      }
+      .outro-line {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        color: var(--ink);
+        opacity: 0;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-coex" id="root" data-composition-id="main" data-start="0" data-width="1080" data-height="1920" data-duration="30">
+      <!-- ========================================================= -->
+      <!-- SCENE 1 — HOOK (0 - 3s)                                     -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-7xkv" id="s-hook" class="clip scene" data-start="0" data-duration="3" data-track-index="1" style="--bg:#f7ede2; --ink:#264653; --accent:#e76f51; --accent-text:#c3542f">
+        <div data-hf-id="hf-myi0" class="scene-glow" style="left:-320px; top:-260px"></div>
+        <svg data-hf-id="hf-6lyy" class="hook-ring" viewBox="0 0 640 640">
+          <circle data-hf-id="hf-yz4x" id="hook-ring-c" cx="320" cy="320" r="300" />
+        </svg>
+        <div data-hf-id="hf-1knp" class="hook-mark">
+          <span data-hf-id="hf-asde" class="word" id="hk-w1">LA</span>
+          <span data-hf-id="hf-zyya" class="word" id="hk-w2">CHIPOTE</span>
+          <span data-hf-id="hf-8y4d" class="hook-place" id="hk-place">BANDOL</span>
+          <span data-hf-id="hf-hu85" class="hook-tagline" id="hk-tag">Cuisine plaisir, face à la mer</span>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 2 — MATIN (3 - 7s)                                    -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-ad27" id="s-morning" class="clip scene" data-start="3" data-duration="4" data-track-index="1" style="--bg:#fdf6e8; --ink:#264653; --accent:#e9c46a">
+        <div data-hf-id="hf-rgs8" class="scene-glow" style="right:-360px; top:-300px"></div>
+        <div data-hf-id="hf-01zv" class="scene-ghost" id="gh-morning">MATIN</div>
+        <div data-hf-id="hf-iirv" class="scene-rule" id="rule-morning" style="left:80px; top:124px; width:0px"></div>
+        <div data-hf-id="hf-r73a" class="scene-tag" id="tag-morning">LE MATIN</div>
+        <h2 data-hf-id="hf-zxr3" class="scene-headline" id="hl-morning">
+          <span data-hf-id="hf-9ryf" class="w">La</span> <span data-hf-id="hf-ncz7" class="w">terrasse</span> <span data-hf-id="hf-9kyc" class="w">s’éveille,</span>
+          <span data-hf-id="hf-j3n4" class="w">cuisson</span> <span data-hf-id="hf-e41k" class="w">douce</span> <span data-hf-id="hf-y7xm" class="w">au</span>
+          <span data-hf-id="hf-fcuk" class="w">vitaliseur.</span>
+        </h2>
+        <div data-hf-id="hf-6fb0" class="scene-icon" id="icon-morning">
+          <svg data-hf-id="hf-z722" width="220" height="220" viewBox="0 0 220 220">
+            <path data-hf-id="hf-6bof" id="steam-1" d="M 70 170 C 60 140 85 130 75 100 C 65 70 90 60 80 30" />
+            <path data-hf-id="hf-4hg3" id="steam-2" d="M 110 170 C 100 140 125 130 115 100 C 105 70 130 60 120 30" />
+            <path data-hf-id="hf-fp6m" id="steam-3" d="M 150 170 C 140 140 165 130 155 100 C 145 70 170 60 160 30" />
+            <path data-hf-id="hf-n4ca" id="pot" d="M 40 175 L 180 175 L 170 195 L 50 195 Z" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 3 — MIDI (7 - 11s)                                    -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-c9fr" id="s-midday" class="clip scene" data-start="7" data-duration="4" data-track-index="1" style="--bg:#fbeecb; --ink:#264653; --accent:#f4a261; --accent-text:#a85c2a">
+        <div data-hf-id="hf-wuo1" class="scene-glow" style="left:-360px; bottom:-320px"></div>
+        <div data-hf-id="hf-tzlb" class="scene-ghost" id="gh-midday">MIDI</div>
+        <div data-hf-id="hf-picr" class="scene-rule" id="rule-midday" style="left:80px; top:124px; width:0px"></div>
+        <div data-hf-id="hf-6cis" class="scene-tag" id="tag-midday">LE MIDI</div>
+        <h2 data-hf-id="hf-sh69" class="scene-headline" id="hl-midday">
+          <span data-hf-id="hf-jdq2" class="w">Une</span> <span data-hf-id="hf-k7qi" class="w">cuisine</span> <span data-hf-id="hf-onof" class="w">vitalitarienne,</span>
+          <span data-hf-id="hf-a1he" class="w">pensée</span> <span data-hf-id="hf-b2va" class="w">plaisir.</span>
+        </h2>
+        <div data-hf-id="hf-07uk" class="scene-icon" id="icon-midday">
+          <svg data-hf-id="hf-r2u6" width="220" height="220" viewBox="0 0 220 220">
+            <path data-hf-id="hf-yr2k" id="sprig-stem" d="M 110 200 C 110 140 110 90 110 30" />
+            <path data-hf-id="hf-jg56" id="sprig-leaf-l" d="M 110 150 C 70 150 55 120 60 90 C 95 95 110 115 110 150 Z" />
+            <path data-hf-id="hf-xtgf" id="sprig-leaf-r" d="M 110 100 C 150 100 165 70 160 40 C 125 45 110 65 110 100 Z" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 4 — APRÈS-MIDI / FACE AU LARGE (11 - 15s)             -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-9drg" id="s-terrace" class="clip scene" data-start="11" data-duration="4" data-track-index="1" style="--bg:#eaf4f1; --ink:#1f3b3e; --accent:#2a9d8f">
+        <div data-hf-id="hf-wmvh" class="scene-glow" style="right:-340px; bottom:-280px"></div>
+        <div data-hf-id="hf-8bpo" class="scene-ghost" id="gh-terrace">BANDOL</div>
+        <div data-hf-id="hf-sv45" class="scene-rule" id="rule-terrace" style="left:80px; top:124px; width:0px"></div>
+        <div data-hf-id="hf-2e2n" class="scene-tag" id="tag-terrace">L’APRÈS-MIDI</div>
+        <h2 data-hf-id="hf-k34x" class="scene-headline" id="hl-terrace">
+          <span data-hf-id="hf-onvr" class="w">La</span> <span data-hf-id="hf-dccz" class="w">terrasse</span> <span data-hf-id="hf-99nn" class="w">de</span>
+          <span data-hf-id="hf-o9kq" class="w">La</span> <span data-hf-id="hf-s0o8" class="w">Chipote,</span> <span data-hf-id="hf-4fq1" class="w">face</span>
+          <span data-hf-id="hf-60dq" class="w">au</span> <span data-hf-id="hf-du5n" class="w">large.</span>
+        </h2>
+        <div data-hf-id="hf-4eu6" class="scene-icon" id="icon-terrace">
+          <svg data-hf-id="hf-ppya" width="260" height="160" viewBox="0 0 260 160">
+            <path data-hf-id="hf-xs8q" id="wave-1" d="M 10 50 C 45 20 85 20 120 50 C 155 80 195 80 230 50" />
+            <path data-hf-id="hf-xyb3" id="wave-2" d="M 10 90 C 45 60 85 60 120 90 C 155 120 195 120 230 90" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 5 — LE SPOT, COUCHER DE SOLEIL (15 - 19s)             -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-gkp4" id="s-spot" class="clip scene" data-start="15" data-duration="4" data-track-index="1" style="--bg:#f6e0c8; --ink:#5a2a1c; --accent:#e76f51">
+        <div data-hf-id="hf-hi6y" class="scene-glow" style="left:-300px; top:-260px"></div>
+        <div data-hf-id="hf-esij" class="scene-ghost" id="gh-spot">LE SPOT</div>
+        <div data-hf-id="hf-pahn" class="scene-rule" id="rule-spot" style="left:80px; top:124px; width:0px"></div>
+        <div data-hf-id="hf-5iy0" class="scene-tag" id="tag-spot">LE SOIR</div>
+        <h2 data-hf-id="hf-0wbl" class="scene-headline" id="hl-spot">
+          <span data-hf-id="hf-bd6j" class="w">Le</span> <span data-hf-id="hf-qxl0" class="w">Spot,</span> <span data-hf-id="hf-cy1y" class="w">terrasse</span>
+          <span data-hf-id="hf-6ma9" class="w">coucher</span> <span data-hf-id="hf-242r" class="w">de</span> <span data-hf-id="hf-uoxu" class="w">soleil.</span>
+        </h2>
+        <div data-hf-id="hf-eocs" class="scene-icon" id="icon-spot">
+          <svg data-hf-id="hf-wxqi" width="220" height="160" viewBox="0 0 220 160">
+            <path data-hf-id="hf-f09b" id="sun-horizon" d="M 10 110 L 210 110" />
+            <path data-hf-id="hf-rwt1" id="sun-arc" d="M 40 110 A 70 70 0 0 1 180 110" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 6 — LA PETITE PLAGE (19 - 23s)                        -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-a5ve" id="s-plage" class="clip scene" data-start="19" data-duration="4" data-track-index="1" style="--bg:#f0dfe0; --ink:#3c2b3e; --accent:#e9c46a; --accent-text:#8a6a1f">
+        <div data-hf-id="hf-ihv3" class="scene-glow" style="right:-320px; bottom:-280px"></div>
+        <div data-hf-id="hf-m386" class="scene-ghost" id="gh-plage">PLAGE</div>
+        <div data-hf-id="hf-r002" class="scene-rule" id="rule-plage" style="left:80px; top:124px; width:0px"></div>
+        <div data-hf-id="hf-rhh9" class="scene-tag" id="tag-plage">À CÔTÉ</div>
+        <h2 data-hf-id="hf-uenu" class="scene-headline" id="hl-plage">
+          <span data-hf-id="hf-kqix" class="w">Et</span> <span data-hf-id="hf-nv9p" class="w">La</span> <span data-hf-id="hf-ea9n" class="w">Petite</span>
+          <span data-hf-id="hf-t2bn" class="w">Plage.</span>
+        </h2>
+        <div data-hf-id="hf-vi3l" class="scene-icon" id="icon-plage">
+          <svg data-hf-id="hf-x9qe" width="260" height="160" viewBox="0 0 260 160">
+            <path data-hf-id="hf-llvp" id="plage-wave-1" d="M 10 60 C 45 30 85 30 120 60 C 155 90 195 90 230 60" />
+            <path data-hf-id="hf-qqid" id="plage-wave-2" d="M 10 100 C 45 70 85 70 120 100 C 155 130 195 130 230 100" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 7 — HÔTEL PLEIN LARGE, mention courte (23 - 27s)      -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-gezv" id="s-hotel" class="clip scene" data-start="23" data-duration="4" data-track-index="1" style="--bg:#264653; --ink:#f7ede2; --accent:#e9c46a">
+        <div data-hf-id="hf-6yyp" class="scene-glow" style="left:50%; top:-260px; margin-left:-550px; opacity:0.14"></div>
+        <div data-hf-id="hf-s1cg" class="scene-rule" id="rule-hotel" style="left:80px; top:170px; width:0px"></div>
+        <div data-hf-id="hf-gc50" class="scene-icon" id="icon-hotel" style="bottom:auto; top:860px; left:80px">
+          <svg data-hf-id="hf-a2cm" width="150" height="150" viewBox="0 0 150 150">
+            <path data-hf-id="hf-q412" id="hotel-roof" d="M 20 60 L 75 20 L 130 60" />
+            <path data-hf-id="hf-mlkm" id="hotel-body" d="M 30 60 L 30 130 L 120 130 L 120 60" />
+            <path data-hf-id="hf-jves" id="hotel-door" d="M 65 130 L 65 95 L 85 95 L 85 130" />
+          </svg>
+        </div>
+        <h2 data-hf-id="hf-jmv4" class="scene-headline" id="hl-hotel" style="top:1020px; font-size:52px; font-family:'JetBrains Mono', monospace; font-weight:700; line-height:1.3">
+          <span data-hf-id="hf-vbct" class="w">Et</span> <span data-hf-id="hf-j8ra" class="w">pour</span> <span data-hf-id="hf-xiku" class="w">prolonger</span>
+          <span data-hf-id="hf-9rxi" class="w">:</span> <span data-hf-id="hf-cht0" class="w">l’Hôtel</span> <span data-hf-id="hf-mll4" class="w">Plein</span>
+          <span data-hf-id="hf-3pbl" class="w">Large,</span> <span data-hf-id="hf-qgso" class="w">à</span> <span data-hf-id="hf-ae3q" class="w">Bandol.</span>
+        </h2>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- SCENE 8 — OUTRO (27 - 30s)                                   -->
+      <!-- ========================================================= -->
+      <section data-hf-id="hf-heyr" id="s-outro" class="clip scene" data-start="27" data-duration="3" data-track-index="1" style="--bg:#1f3b40; --ink:#f7ede2; --accent:#e9c46a">
+        <div data-hf-id="hf-6c6o" class="scene-glow" style="left:50%; top:50%; margin-left:-550px; margin-top:-550px; opacity:0.16"></div>
+        <div data-hf-id="hf-qq1q" class="outro-wrap">
+          <div data-hf-id="hf-cqmq" class="outro-mark" id="out-mark">LA CHIPOTE</div>
+          <div data-hf-id="hf-yedp" class="outro-place" id="out-place">BANDOL</div>
+          <div data-hf-id="hf-txkt" class="outro-rule" id="out-rule"></div>
+          <div data-hf-id="hf-r0a2" class="outro-line" id="out-ig">@lachipote.lespot.lapetiteplage</div>
+          <div data-hf-id="hf-jvwp" class="outro-line" id="out-web">www.hotel-pleinlarge.com</div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- PERSISTENT JOURNEY BAR — 0 - 30s, above all scenes           -->
+      <!-- ========================================================= -->
+      <div data-hf-id="hf-dga4" id="journey" class="clip" data-start="0" data-duration="30" data-track-index="5">
+        <div data-hf-id="hf-bhtg" class="journey-track" id="jt-track"></div>
+        <div data-hf-id="hf-uhb9" class="journey-label" id="jt-l1" style="left:80px">MATIN</div>
+        <div data-hf-id="hf-hsm8" class="journey-label" id="jt-l2" style="left:50%">MIDI</div>
+        <div data-hf-id="hf-h308" class="journey-label" id="jt-l3" style="left:1000px">SOIR</div>
+        <div data-hf-id="hf-d9co" class="journey-sun" id="jt-sun"></div>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const F = 1 / 30;
+
+      /* ---------- helper: waterfall-entry across a headline's words ---------- */
+      function waterfallHeadline(selector, start) {
+        const words = gsap.utils.toArray(selector + " .w");
+        let t = start;
+        words.forEach((w, i) => {
+          const isLast = i === words.length - 1;
+          const yOff = i === 0 ? 46 : isLast ? 42 : 36;
+          const dur = i === 0 ? 0.17 : isLast ? 0.15 : 0.14;
+          tl.set(w, { opacity: 1, y: yOff }, t);
+          tl.to(w, { y: 0, duration: dur, ease: "power4.out" }, t);
+          t += dur - F;
+        });
+        return t;
+      }
+
+      /* ================= SCENE 1 — HOOK ================= */
+      (function () {
+        const ring = document.getElementById("hook-ring-c");
+        const len = ring.getTotalLength();
+        ring.style.strokeDasharray = len;
+        ring.style.strokeDashoffset = len;
+        tl.to(ring, { strokeDashoffset: 0, duration: 0.9, ease: "power2.out" }, 0.0);
+
+        tl.fromTo("#hk-w1", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.25);
+        tl.fromTo("#hk-w2", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.45);
+        tl.to("#hk-place", { opacity: 1, duration: 0.4, ease: "power1.out" }, 1.0);
+        tl.to("#hk-tag", { opacity: 0.75, duration: 0.4, ease: "power1.out" }, 1.3);
+        tl.to("#s-hook .scene-glow", { scale: 1.08, duration: 1.6, ease: "sine.inOut", repeat: 0 }, 0.3);
+      })();
+
+      /* ================= SCENE 2 — MATIN ================= */
+      (function () {
+        const base = 3;
+        tl.to("#rule-morning", { width: "200px", duration: 0.4, ease: "power2.out" }, base + 0.05);
+        tl.fromTo("#tag-morning", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, base + 0.1);
+        waterfallHeadline("#hl-morning", base + 0.35);
+
+        ["pot", "steam-1", "steam-2", "steam-3"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, base + 1.0 + i * 0.32);
+        });
+        tl.to(["#steam-1", "#steam-2", "#steam-3"], { y: -10, duration: 1.1, ease: "sine.inOut", yoyo: true, repeat: 2, stagger: 0.15 }, base + 2.4);
+        tl.to("#gh-morning", { x: 20, duration: 4, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= SCENE 3 — MIDI ================= */
+      (function () {
+        const base = 7;
+        tl.to("#rule-midday", { width: "200px", duration: 0.4, ease: "power2.out" }, base + 0.05);
+        tl.fromTo("#tag-midday", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, base + 0.1);
+        waterfallHeadline("#hl-midday", base + 0.35);
+
+        ["sprig-stem", "sprig-leaf-l", "sprig-leaf-r"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.55, ease: "power2.out" }, base + 0.9 + i * 0.4);
+        });
+        tl.to("#icon-midday", { rotation: 3, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "50% 100%" }, base + 2.2);
+        tl.to("#gh-midday", { x: -20, duration: 4, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= SCENE 4 — TERRASSE / FACE AU LARGE ================= */
+      (function () {
+        const base = 11;
+        tl.to("#rule-terrace", { width: "200px", duration: 0.4, ease: "power2.out" }, base + 0.05);
+        tl.fromTo("#tag-terrace", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, base + 0.1);
+        waterfallHeadline("#hl-terrace", base + 0.35);
+
+        ["wave-1", "wave-2"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, base + 1.1 + i * 0.3);
+        });
+        tl.to("#icon-terrace", { x: 14, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: 1 }, base + 1.8);
+        tl.to("#gh-terrace", { x: 20, duration: 4, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= SCENE 5 — LE SPOT ================= */
+      (function () {
+        const base = 15;
+        tl.to("#rule-spot", { width: "200px", duration: 0.4, ease: "power2.out" }, base + 0.05);
+        tl.fromTo("#tag-spot", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, base + 0.1);
+        waterfallHeadline("#hl-spot", base + 0.35);
+
+        ["sun-horizon", "sun-arc"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.55, ease: "power2.out" }, base + 1.0 + i * 0.4);
+        });
+        tl.to("#icon-spot", { scale: 1.06, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "50% 100%" }, base + 2.0);
+        tl.to("#gh-spot", { x: -20, duration: 4, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= SCENE 6 — LA PETITE PLAGE ================= */
+      (function () {
+        const base = 19;
+        tl.to("#rule-plage", { width: "200px", duration: 0.4, ease: "power2.out" }, base + 0.05);
+        tl.fromTo("#tag-plage", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, base + 0.1);
+        waterfallHeadline("#hl-plage", base + 0.35);
+
+        ["plage-wave-1", "plage-wave-2"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, base + 1.0 + i * 0.3);
+        });
+        tl.to("#icon-plage", { x: -14, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: 1 }, base + 1.8);
+        tl.to("#gh-plage", { x: 20, duration: 4, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= SCENE 7 — HÔTEL PLEIN LARGE ================= */
+      (function () {
+        const base = 23;
+        tl.to("#rule-hotel", { width: "160px", duration: 0.4, ease: "power2.out" }, base + 0.1);
+        ["hotel-roof", "hotel-body", "hotel-door"].forEach((id, i) => {
+          const p = document.getElementById(id);
+          const len = p.getTotalLength();
+          p.style.strokeDasharray = len;
+          p.style.strokeDashoffset = len;
+          tl.to(p, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, base + 0.3 + i * 0.35);
+        });
+        waterfallHeadline("#hl-hotel", base + 1.1);
+      })();
+
+      /* ================= SCENE 8 — OUTRO ================= */
+      (function () {
+        const base = 27;
+        tl.fromTo("#out-mark", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "power3.out" }, base + 0.1);
+        tl.to("#out-place", { opacity: 1, duration: 0.35, ease: "power1.out" }, base + 0.55);
+        tl.to("#out-rule", { scaleX: 1, duration: 0.4, ease: "power2.out" }, base + 0.8);
+        tl.to("#out-ig", { opacity: 1, duration: 0.3, ease: "power1.out" }, base + 1.1);
+        tl.to("#out-web", { opacity: 1, duration: 0.3, ease: "power1.out" }, base + 1.35);
+        tl.to("#s-outro .scene-glow", { scale: 1.1, duration: 2.5, ease: "sine.inOut" }, base);
+      })();
+
+      /* ================= PERSISTENT JOURNEY BAR ================= */
+      (function () {
+        const total = 30;
+        const travel = 1000 - 80; // trackRight - trackLeft, in px
+
+        tl.fromTo(
+          "#jt-sun",
+          { x: 0, background: "#e9c46a" },
+          { x: travel, duration: total, ease: "none" },
+          0,
+        );
+        tl.to("#jt-sun", { background: "#f4a261", duration: 0, ease: "none" }, 11);
+        tl.to("#jt-sun", { background: "#e76f51", duration: 0, ease: "none" }, 19);
+        tl.to("#jt-sun", { background: "#9d6b53", duration: 0, ease: "none" }, 27);
+
+        tl.fromTo("#jt-track", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, 0.1);
+        tl.fromTo(["#jt-l1", "#jt-l2", "#jt-l3"], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out", stagger: 0.08 }, 0.2);
+
+        // journey bar reads dark on light scenes, light on the two dusk scenes (hotel + outro)
+        tl.set("#jt-track", { background: "rgba(38,70,83,0.35)" }, 0);
+        tl.to(["#jt-track"], { background: "rgba(247,237,226,0.4)", duration: 0 }, 23);
+        tl.set(["#jt-l1", "#jt-l2", "#jt-l3"], { color: "#264653" }, 0);
+        tl.to(["#jt-l1", "#jt-l2", "#jt-l3"], { color: "#f7ede2", duration: 0 }, 23);
+      })();
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
