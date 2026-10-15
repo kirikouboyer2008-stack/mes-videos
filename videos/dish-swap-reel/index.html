@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=720, height=1280" />
+    <title>La Chipote — Dish Swap Reel</title>
+    <script src="vendor/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 720px;
+        height: 1280px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .dish {
+        position: absolute;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="8.64" data-width="720" data-height="1280">
+      <!-- Untouched source footage: chef, apron, bell, hand, counter, audio all unchanged. -->
+      <video
+        id="chef-source"
+        class="clip"
+        src="assets/chef-source.mp4"
+        data-start="0"
+        data-track-index="0"
+        playsinline
+        data-has-audio="true"
+        style="position: absolute; left: 0px; top: 0px; width: 720px; height: 1280px; object-fit: cover; z-index: 0"
+      ></video>
+
+      <!--
+        Four real-dish overlays, one per segment, covering only the counter region
+        where the AI-generated dish appears to the chef's right hand (camera-left of
+        the bell). Each is cropped/alpha-masked to plate+food only (see scratchpad
+        cutout pipeline) and crossfades into the next at the point where the source
+        footage's own dish-morph is already in flux, so the handoff hides inside the
+        original motion instead of reading as a hard cut.
+
+        Segment timeline (seconds, 25fps):
+          0.00–2.40  native footage only (chef lowers the dish AND keeps a hand
+                      resting on its rim through ~frame 58 — overlaying this
+                      window would paste our plate over the chef's glove, so
+                      it is deliberately left untouched; see QA notes)
+          2.40–3.60  Dish A — seafood & vegetable bowl (photo 2)
+          3.60–5.20  Dish B — octopus & bisque bowl (photo 1)
+          5.20–7.32  Dish C — seafood platter (photo 4)
+          7.32–8.64  Dish D — carpaccio rolls (photo 3)
+        Crossfade overlap: 0.30s at each boundary (A has a plain 0.2s fade-in
+        since nothing real needs to be crossfaded away under it).
+      -->
+      <img
+        id="dish-a"
+        class="clip dish"
+        src="assets/dish2_salad.png"
+        data-start="2.4"
+        data-duration="1.2"
+        data-track-index="1"
+        style="left: 65px; top: 694px; width: 300px; height: 276px; z-index: 1"
+      />
+      <img
+        id="dish-b"
+        class="clip dish"
+        src="assets/dish1_octopus.png"
+        data-start="3.3"
+        data-duration="1.9"
+        data-track-index="2"
+        style="left: 57px; top: 705px; width: 320px; height: 335px; z-index: 2"
+      />
+      <img
+        id="dish-c"
+        class="clip dish"
+        src="assets/dish4_platter.png"
+        data-start="4.9"
+        data-duration="2.42"
+        data-track-index="3"
+        style="left: 42px; top: 692px; width: 360px; height: 280px; z-index: 3"
+      />
+      <img
+        id="dish-d"
+        class="clip dish"
+        src="assets/dish3_carpaccio.png"
+        data-start="7.02"
+        data-duration="1.62"
+        data-track-index="4"
+        style="left: 100px; top: 682px; width: 230px; height: 300px; z-index: 4"
+      />
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // Dish A: plain fade-in once the chef's hand has fully cleared the dish rim.
+      tl.fromTo("#dish-a", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 2.4);
+
+      // Dish B/C/D: each fades in on top of the previous for the last 0.3s before its
+      // nominal slot, so the previous dish is still fully opaque underneath while the
+      // incoming one takes over — a clean crossfade with no bare-video flash.
+      tl.fromTo("#dish-b", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 3.3);
+      tl.fromTo("#dish-c", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 4.9);
+      tl.fromTo("#dish-d", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 7.02);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
